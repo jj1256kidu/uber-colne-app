@@ -1,8 +1,0 @@
-streamlit
-folium
-streamlit-folium
-geopy
-streamlit-lottie
-streamlit-autorefresh
-requests
-numpy 
