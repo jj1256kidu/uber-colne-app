@@ -111,6 +111,10 @@ if 'current_ride' not in st.session_state:
     st.session_state.current_ride = None
 if 'ride_history' not in st.session_state:
     st.session_state.ride_history = []
+if 'pickup' not in st.session_state:
+    st.session_state.pickup = "Times Square, New York"
+if 'dropoff' not in st.session_state:
+    st.session_state.dropoff = "Central Park, New York"
 
 def main():
     # Sidebar for navigation and user info
@@ -149,14 +153,16 @@ def show_booking_interface():
         with col1:
             st.header("🎯 Book Your Ride")
             
-            # Location inputs
-            pickup = st.text_input("Pickup Location", "Times Square, New York")
-            dropoff = st.text_input("Drop-off Location", "Central Park, New York")
+            # Location inputs - store in session state
+            st.session_state.pickup = st.text_input("Pickup Location", 
+                value=st.session_state.pickup, key="pickup_input")
+            st.session_state.dropoff = st.text_input("Drop-off Location", 
+                value=st.session_state.dropoff, key="dropoff_input")
             
             # Show map only if dependencies are available
             if MAPS_ENABLED:
                 try:
-                    m = create_map(pickup, dropoff)
+                    m = create_map(st.session_state.pickup, st.session_state.dropoff)
                     folium_static(m)
                 except Exception as e:
                     st.error(f"Could not load map. Error: {str(e)}")
@@ -167,8 +173,8 @@ def show_booking_interface():
         with col2:
             st.header("📋 Ride Details")
             
-            # Calculate estimates
-            distance = calculate_distance(pickup, dropoff)
+            # Calculate estimates using session state values
+            distance = calculate_distance(st.session_state.pickup, st.session_state.dropoff)
             fare = calculate_fare(distance)
             time_estimate = get_estimated_time(distance)
             
@@ -204,13 +210,16 @@ def show_active_ride():
     with col1:
         # Show live map with driver location
         if MAPS_ENABLED:
-            m = create_map(
-                st.session_state.current_ride['pickup'],
-                st.session_state.current_ride['dropoff'],
-                show_driver=True,
-                driver_location=st.session_state.current_ride['driver_location']
-            )
-            folium_static(m)
+            try:
+                m = create_map(
+                    st.session_state.current_ride['pickup'],
+                    st.session_state.current_ride['dropoff'],
+                    show_driver=True,
+                    driver_location=st.session_state.current_ride.get('driver_location')
+                )
+                folium_static(m)
+            except Exception as e:
+                st.error(f"Could not load map. Error: {str(e)}")
     
     with col2:
         # Show driver details
