@@ -1,19 +1,17 @@
 available_drivers = [
     {
-        'name': 'John Smith',
+        'name': 'Michael Smith',
         'photo': 'https://randomuser.me/api/portraits/men/1.jpg',
-        'rating': 4.8,
-        'trips': 1250,
         'car': 'Toyota Camry',
-        'plate': 'ABC 123'
+        'plate': 'NYC 1234',
+        'rating': 4.8
     },
     {
         'name': 'Sarah Johnson',
         'photo': 'https://randomuser.me/api/portraits/women/1.jpg',
-        'rating': 4.9,
-        'trips': 890,
         'car': 'Honda Civic',
-        'plate': 'XYZ 789'
+        'plate': 'NYC 5678',
+        'rating': 4.9
     },
     {
         'name': 'Michael Brown',
