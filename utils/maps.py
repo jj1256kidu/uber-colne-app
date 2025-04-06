@@ -10,58 +10,92 @@ from streamlit_folium import folium_static
 
 def create_map(pickup=None, dropoff=None, driver_location=None):
     """Create a map with markers and route"""
-    
     # Default center (New York City)
     center = [40.7128, -74.0060]
+    zoom = 12
     
     # Create map
-    m = folium.Map(location=center, zoom_start=13, tiles="cartodbpositron")
+    m = folium.Map(
+        location=center,
+        zoom_start=zoom,
+        tiles="cartodbpositron",
+        control_scale=True
+    )
     
-    # Add random cars
-    for _ in range(5):
-        car_location = [
-            center[0] + random.uniform(-0.01, 0.01),
-            center[1] + random.uniform(-0.01, 0.01)
-        ]
-        folium.Marker(
-            car_location,
-            popup="Available",
-            icon=folium.Icon(icon='car', prefix='fa')
-        ).add_to(m)
+    # Add random cars (if no specific driver location)
+    if not driver_location:
+        for _ in range(5):
+            car_loc = [
+                center[0] + random.uniform(-0.02, 0.02),
+                center[1] + random.uniform(-0.02, 0.02)
+            ]
+            folium.Marker(
+                car_loc,
+                popup="Available",
+                icon=folium.Icon(icon='car', prefix='fa', color='lightgray')
+            ).add_to(m)
     
-    # Add markers if locations provided
+    # Add pickup marker
     if pickup:
         folium.Marker(
             pickup,
             popup="Pickup",
-            icon=folium.Icon(color='green')
+            icon=folium.Icon(color='green', icon='flag', prefix='fa'),
+            tooltip="Pickup Location"
         ).add_to(m)
     
+    # Add dropoff marker
     if dropoff:
         folium.Marker(
             dropoff,
             popup="Dropoff",
-            icon=folium.Icon(color='red')
+            icon=folium.Icon(color='red', icon='flag-checkered', prefix='fa'),
+            tooltip="Dropoff Location"
         ).add_to(m)
     
+    # Add driver marker and route
     if driver_location:
+        # Add driver marker
         folium.Marker(
             driver_location,
             popup="Driver",
-            icon=folium.Icon(color='blue', icon='car', prefix='fa')
+            icon=folium.Icon(color='blue', icon='car', prefix='fa'),
+            tooltip="Driver Location"
         ).add_to(m)
         
-        # Draw route line
+        # Draw route if we have both pickup and dropoff
         if pickup and dropoff:
-            route = [pickup, driver_location, dropoff]
+            route_points = create_route_points(pickup, dropoff)
             folium.PolyLine(
-                route,
-                weight=2,
+                route_points,
+                weight=3,
                 color='blue',
-                opacity=0.8
+                opacity=0.6
             ).add_to(m)
     
     return m
+
+def create_route_points(start, end, num_points=20):
+    """Create a curved route between two points"""
+    # Convert to numpy arrays for easier calculation
+    start_point = np.array(start)
+    end_point = np.array(end)
+    
+    # Create a curve using sine function
+    direct = end_point - start_point
+    length = np.linalg.norm(direct)
+    perp = np.array([-direct[1], direct[0]]) / length
+    
+    # Generate points
+    points = []
+    for i in range(num_points):
+        t = i / (num_points - 1)
+        # Add sine curve perpendicular to direct path
+        sine = np.sin(t * np.pi) * length * 0.05
+        point = start_point + t * direct + sine * perp
+        points.append(point.tolist())
+    
+    return points
 
 def generate_route(start, end):
     """Generate a route between two points
@@ -108,21 +142,9 @@ def update_driver_location(pickup, dropoff, progress):
     if not pickup or not dropoff:
         return None
     
-    # Create a curved route
-    def create_curve_point(start, end, progress):
-        direct = np.array(end) - np.array(start)
-        perp = np.array([-direct[1], direct[0]])
-        curve = np.sin(progress * np.pi) * perp * 0.01
-        point = start + progress * direct + curve
-        return point.tolist()
-    
-    current_point = create_curve_point(
-        np.array(pickup),
-        np.array(dropoff),
-        progress
-    )
-    
-    return current_point
+    route_points = create_route_points(pickup, dropoff)
+    point_index = int(progress * (len(route_points) - 1))
+    return route_points[point_index]
 
 def show_driver_assignment():
     """Show driver assignment and live tracking"""
