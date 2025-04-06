@@ -1,239 +1,92 @@
+
 import streamlit as st
-from datetime import datetime
+from streamlit_lottie import st_lottie
+import requests
 
-# Configure the page
-st.set_page_config(
-    page_title="RideBook",
-    layout="centered",
-    initial_sidebar_state="collapsed"
-)
+st.set_page_config(page_title="Cab Booking App", layout="centered")
 
-# Custom CSS for mobile-style UI
+def load_lottie_url(url):
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    return r.json()
+
+# Custom CSS for mobile UI
 st.markdown("""
-<style>
-    /* Reset and base styles */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+    <style>
+    body {
+        background-color: #f8f8f8;
+        font-family: 'Helvetica Neue', sans-serif;
     }
-
-    /* Hide Streamlit components */
-    #MainMenu, header, footer {
-        display: none !important;
-    }
-
-    .stApp {
-        background: #f8f9fa !important;
-    }
-
-    /* Mobile container */
-    .mobile-container {
-        max-width: 414px;
-        margin: 0 auto;
-        padding: 24px;
-        background: white;
-        min-height: 100vh;
-        position: relative;
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
-    /* Header section */
-    .header {
-        margin-bottom: 32px;
-    }
-
-    .greeting {
-        font-size: 28px;
-        font-weight: 600;
-        color: #1a1a1a;
-        margin-bottom: 4px;
-    }
-
-    .subtitle {
-        color: #666;
-        font-size: 15px;
-    }
-
-    /* Search section */
-    .search-box {
-        background: #f8f9fa;
-        border-radius: 28px;
-        padding: 16px 24px;
+    .centered {
         display: flex;
+        justify-content: center;
         align-items: center;
-        margin-bottom: 24px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
     }
-
-    .search-box:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .search-input {
-        border: none;
-        background: none;
-        font-size: 16px;
-        width: 100%;
-        padding-right: 16px;
-    }
-
-    .search-icon {
-        color: #1a1a1a;
-        font-size: 20px;
-    }
-
-    /* Location cards */
-    .locations-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-        margin-bottom: 32px;
-    }
-
-    .location-card {
-        background: #f8f9fa;
-        padding: 20px;
+    .service-card {
+        background-color: #ffffff;
         border-radius: 16px;
-        cursor: pointer;
-        transition: all 0.2s ease;
+        padding: 10px;
+        box-shadow: 0px 0px 5px rgba(0,0,0,0.05);
+        text-align: center;
+        margin-bottom: 10px;
     }
-
-    .location-card:hover {
-        transform: translateY(-2px);
-        background: #f0f0f0;
+    .rounded-input {
+        border-radius: 30px !important;
+        padding: 10px !important;
     }
-
-    .location-icon {
-        font-size: 24px;
-        margin-bottom: 12px;
-    }
-
-    .location-name {
-        font-weight: 600;
-        margin-bottom: 4px;
-        color: #1a1a1a;
-    }
-
-    .location-address {
-        font-size: 13px;
-        color: #666;
-        line-height: 1.4;
-    }
-
-    /* Bottom navigation */
-    .bottom-nav {
-        position: fixed;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 100%;
-        max-width: 414px;
-        background: white;
-        padding: 16px 24px;
-        display: flex;
-        justify-content: space-between;
-        box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
-        border-top-left-radius: 24px;
-        border-top-right-radius: 24px;
-    }
-
-    .nav-button {
-        padding: 12px 32px;
-        border-radius: 24px;
-        font-weight: 500;
-        font-size: 15px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .nav-button.active {
-        background: #1a1a1a;
-        color: white;
-    }
-
-    .nav-button:not(.active) {
-        color: #666;
-    }
-
-    .nav-button:not(.active):hover {
-        background: #f0f0f0;
-    }
-
-    /* Recent rides section */
-    .section-title {
-        font-weight: 600;
-        color: #1a1a1a;
-        margin-bottom: 16px;
-    }
-
-    .recent-rides {
-        margin-bottom: 80px;  /* Space for bottom nav */
-    }
-</style>
+    </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state
-if 'active_tab' not in st.session_state:
-    st.session_state.active_tab = 'rides'
+st.markdown("## 🚗 Rides   🍜 Delivery")
 
-# Get greeting based on time of day
-def get_greeting():
-    hour = datetime.now().hour
-    if 5 <= hour < 12:
-        return "Good morning"
-    elif 12 <= hour < 17:
-        return "Good afternoon"
-    else:
-        return "Good evening"
+# Where to input
+col1, col2 = st.columns([4, 1])
+with col1:
+    where_to = st.text_input("Where to?", placeholder="Where to?", label_visibility="collapsed")
+with col2:
+    st.button("Now ⏰")
 
-# Main app layout
-st.markdown(f"""
-<div class="mobile-container">
-    <!-- Header section -->
-    <div class="header">
-        <div class="greeting">{get_greeting()}, Joost</div>
-        <div class="subtitle">Where are you going today?</div>
-    </div>
+# Saved Places
+st.write("###")
+st.markdown("#### 📍 Saved Places")
+with st.container():
+    st.markdown("**🏢 Work**  
+1455 Market St", unsafe_allow_html=True)
+    st.markdown("**🏠 Home**  
+903 Sunrise Terr", unsafe_allow_html=True)
 
-    <!-- Search box -->
-    <div class="search-box">
-        <input type="text" class="search-input" placeholder="Where to?">
-        <span class="search-icon">📍</span>
-    </div>
+# Suggestions section
+st.write("###")
+st.markdown("#### 🔁 Suggestions")
+sug1, sug2, sug3, sug4 = st.columns(4)
+sug1.markdown('<div class="service-card">🚗<br>Ride</div>', unsafe_allow_html=True)
+sug2.markdown('<div class="service-card">📦<br>Package</div>', unsafe_allow_html=True)
+sug3.markdown('<div class="service-card">🕒<br>Reserve</div>', unsafe_allow_html=True)
+sug4.markdown('<div class="service-card">🚘<br>Rent</div>', unsafe_allow_html=True)
 
-    <!-- Saved locations -->
-    <div class="locations-grid">
-        <!-- Work location -->
-        <div class="location-card">
-            <div class="location-icon">🏢</div>
-            <div class="location-name">Work</div>
-            <div class="location-address">1455 Market Street</div>
-        </div>
+# Service grid
+st.write("###")
+st.markdown("#### 🧭 Go Anywhere")
+cols = st.columns(3)
+services = [
+    ("🚗", "Ride"), ("📦", "Package"), ("🕒", "Reserve"),
+    ("🧑‍💻", "Hourly"), ("🔑", "Rent"), ("🚲", "2-Wheels"),
+    ("🚆", "Transit"), ("🚌", "Charter"), ("🌍", "Explore")
+]
+for i in range(0, len(services), 3):
+    cols = st.columns(3)
+    for j in range(3):
+        if i + j < len(services):
+            icon, label = services[i + j]
+            cols[j].markdown(f'<div class="service-card">{icon}<br>{label}</div>', unsafe_allow_html=True)
 
-        <!-- Home location -->
-        <div class="location-card">
-            <div class="location-icon">🏠</div>
-            <div class="location-name">Home</div>
-            <div class="location-address">1600 Michigan Avenue</div>
-        </div>
-    </div>
+# Optional: Add a ride planning section with images
+st.write("###")
+st.markdown("#### 🗓️ Ways to plan your trip")
+img_cols = st.columns(2)
+img_cols[0].image("https://source.unsplash.com/400x200/?calendar", caption="Plan your week")
+img_cols[1].image("https://source.unsplash.com/400x200/?festival", caption="Festival Rides")
 
-    <!-- Recent rides section -->
-    <div class="recent-rides">
-        <div class="section-title">Recent Rides</div>
-        <div class="location-card">
-            <div class="location-icon">📍</div>
-            <div class="location-name">Central Park</div>
-            <div class="location-address">New York, NY 10024</div>
-        </div>
-    </div>
-
-    <!-- Bottom navigation -->
-    <div class="bottom-nav">
-        <div class="nav-button active">🚗 Rides</div>
-        <div class="nav-button">🍔 Eats</div>
-    </div>
-</div>
-""", unsafe_allow_html=True) 
+st.write("###")
+st.success("✅ UI replicated. You can now add map, booking, and animation logic.")
