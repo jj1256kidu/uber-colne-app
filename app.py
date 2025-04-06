@@ -1,234 +1,258 @@
 import streamlit as st
 from datetime import datetime
 import time
+import random
+from streamlit_folium import folium_static
+import folium
+from geopy.distance import geodesic
+from geopy.geocoders import Nominatim
 
-# Import utilities
-from utils.auth import check_credentials, show_login
-from utils.booking import show_booking_page
-from utils.ride import show_active_ride, show_ride_history
-from utils.payment import show_payment_page
+# Import custom modules
+from utils.maps import create_map, update_driver_location
+from utils.ride import calculate_fare, estimate_time
+from data.locations import saved_locations, recent_locations
+from data.drivers import available_drivers
 
-# Page config
+# Page config - Set wide mode and remove default margins
 st.set_page_config(
-    page_title="RideShare Pro",
+    page_title="RideShare",
     page_icon="🚗",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS directly in the app
+# Custom CSS for Uber-like styling
 st.markdown("""
     <style>
-    /* Main theme colors */
-    :root {
-        --primary-color: #276EF1;
-        --secondary-color: #95A5A6;
-        --background-color: #FFFFFF;
-        --text-color: #2C3E50;
+    /* Main container */
+    .main {
+        padding: 0 !important;
     }
-
-    /* Card styles */
-    .metric-card {
-        background-color: white;
-        border-radius: 10px;
+    
+    /* Bottom drawer styling */
+    .bottom-drawer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-radius: 20px 20px 0 0;
+        padding: 20px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+    
+    /* Input field styling */
+    .stTextInput input {
+        border-radius: 30px;
+        border: none;
+        background: #f8f9fa;
+        padding: 15px 20px;
+        font-size: 16px;
+    }
+    
+    /* Button styling */
+    .stButton button {
+        border-radius: 30px;
+        padding: 10px 25px;
+        background: black;
+        color: white;
+        border: none;
+        font-weight: 600;
+    }
+    
+    /* Card styling */
+    .uber-card {
+        background: white;
+        border-radius: 15px;
         padding: 20px;
         margin: 10px 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        transition: transform 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-
-    .metric-card:hover {
-        transform: translateY(-2px);
-    }
-
-    .driver-card {
-        background-color: white;
-        border-radius: 15px;
-        padding: 25px;
-        margin: 15px 0;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        text-align: center;
-    }
-
-    .status-card {
-        background-color: #f8f9fa;
-        border-radius: 10px;
+    
+    /* Location item styling */
+    .location-item {
+        display: flex;
+        align-items: center;
         padding: 15px;
-        margin: 15px 0;
-    }
-
-    /* Progress bar */
-    .progress-bar {
-        width: 100%;
-        height: 10px;
-        background-color: #e9ecef;
-        border-radius: 5px;
-        overflow: hidden;
-        margin-top: 10px;
-    }
-
-    .progress {
-        height: 100%;
-        background-color: var(--primary-color);
-        transition: width 0.3s ease;
-    }
-
-    /* Button styles */
-    .stButton button {
-        border-radius: 25px;
-        padding: 10px 25px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-
-    .stButton button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-
-    /* Dark mode adjustments */
-    @media (prefers-color-scheme: dark) {
-        .metric-card, .driver-card {
-            background-color: #2C3E50;
-            color: white;
-        }
-        
-        .status-card {
-            background-color: #34495E;
-            color: white;
-        }
-    }
-
-    /* Animations */
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-    .animate-fade-in {
-        animation: fadeIn 0.5s ease-in;
-    }
-
-    /* Mobile responsiveness */
-    @media screen and (max-width: 768px) {
-        .metric-card, .driver-card, .status-card {
-            padding: 15px;
-            margin: 8px 0;
-        }
-    }
-
-    /* Ride options styling */
-    .ride-option {
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #ddd;
-        margin: 10px 0;
+        border-bottom: 1px solid #f0f0f0;
         cursor: pointer;
     }
-
-    .ride-option:hover {
-        background-color: #f8f9fa;
-    }
-
-    /* Payment form styling */
-    .payment-card {
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    /* Fare display */
-    .fare-card {
+    
+    .location-item:hover {
         background: #f8f9fa;
+    }
+    
+    /* Driver info styling */
+    .driver-info {
+        display: flex;
+        align-items: center;
         padding: 20px;
-        border-radius: 10px;
-        text-align: center;
-        margin: 20px 0;
-    }
-
-    /* Login form styling */
-    .login-container {
         background: white;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        max-width: 400px;
-        margin: 0 auto;
+        border-radius: 15px;
+        margin-top: 10px;
     }
-
+    
+    .driver-photo {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+    
     /* Rating stars */
     .rating {
         color: #ffd700;
-        font-size: 24px;
+        font-size: 20px;
     }
-
-    /* History item styling */
-    .history-item {
-        border-left: 4px solid var(--primary-color);
-        padding-left: 15px;
-        margin: 10px 0;
+    
+    /* Tabs styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2px;
+        background-color: #f8f9fa;
+        border-radius: 30px;
+        padding: 5px;
     }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 30px;
+        padding: 10px 20px;
+        font-weight: 600;
+    }
+    
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
 # Initialize session state
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-if 'current_page' not in st.session_state:
-    st.session_state.current_page = 'home'
+if 'page' not in st.session_state:
+    st.session_state.page = 'booking'
 if 'current_ride' not in st.session_state:
     st.session_state.current_ride = None
-if 'ride_history' not in st.session_state:
-    st.session_state.ride_history = []
-if 'dark_mode' not in st.session_state:
-    st.session_state.dark_mode = False
+if 'username' not in st.session_state:
+    st.session_state.username = "John"
+
+def show_booking_page():
+    """Main booking interface with map and bottom drawer"""
+    
+    # Full-screen map
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        # Create map centered on default location
+        m = create_map()
+        folium_static(m, width=1200, height=800)
+    
+    # Bottom drawer
+    with st.container():
+        st.markdown("""
+            <div class="bottom-drawer">
+                <h3>Good morning, {}</h3>
+                <div class="uber-card">
+                    <div style="position: relative;">
+                        <input type="text" placeholder="Where to?" 
+                               style="width: 100%; padding: 15px; border-radius: 30px; border: none; background: #f8f9fa;">
+                        <span style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%);">📍</span>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h4>Recent Locations</h4>
+                        {}
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <div style="display: flex; justify-content: center; gap: 20px;">
+                        <button style="flex: 1; padding: 15px; border-radius: 30px; background: black; color: white; border: none;">
+                            🚗 Rides
+                        </button>
+                        <button style="flex: 1; padding: 15px; border-radius: 30px; background: #f8f9fa; color: black; border: none;">
+                            🍽️ Eats
+                        </button>
+                    </div>
+                </div>
+            </div>
+        """.format(
+            st.session_state.username,
+            "".join([f"""
+                <div class="location-item">
+                    <span style="margin-right: 10px;">📍</span>
+                    <div>
+                        <div style="font-weight: 600;">{loc['name']}</div>
+                        <div style="color: #666; font-size: 14px;">{loc['address']}</div>
+                    </div>
+                </div>
+            """ for loc in recent_locations])
+        ), unsafe_allow_html=True)
+
+def show_driver_assignment():
+    """Show driver assignment and live tracking"""
+    
+    # Update driver location
+    if 'driver_location' not in st.session_state.current_ride:
+        st.session_state.current_ride['driver_location'] = update_driver_location()
+    
+    # Show map with route and driver
+    m = create_map(
+        pickup=st.session_state.current_ride['pickup'],
+        dropoff=st.session_state.current_ride['dropoff'],
+        driver_location=st.session_state.current_ride['driver_location']
+    )
+    folium_static(m, width=1200, height=800)
+    
+    # Driver info card
+    driver = st.session_state.current_ride['driver']
+    st.markdown(f"""
+        <div class="driver-info">
+            <img src="{driver['photo']}" class="driver-photo">
+            <div>
+                <h3>{driver['name']}</h3>
+                <div>{driver['car']} • {driver['plate']}</div>
+                <div class="rating">{'⭐' * int(driver['rating'])}</div>
+            </div>
+            <div style="margin-left: auto">
+                <h2>ETA: {st.session_state.current_ride['eta']} min</h2>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+def show_ride_completed():
+    """Show ride completion and rating screen"""
+    
+    st.markdown("""
+        <div style="text-align: center; padding: 40px;">
+            <h1>🎉 Ride Completed!</h1>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Rating and feedback
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("""
+            <div class="uber-card">
+                <h3>Rate your ride</h3>
+                <div class="rating" style="font-size: 40px; margin: 20px 0;">
+                    ⭐⭐⭐⭐⭐
+                </div>
+                <textarea placeholder="Additional feedback (optional)" 
+                          style="width: 100%; padding: 10px; border-radius: 10px; margin: 10px 0;"></textarea>
+                <button style="width: 100%; padding: 15px; border-radius: 30px; background: black; color: white; border: none; margin-top: 20px;">
+                    Submit Rating
+                </button>
+            </div>
+        """, unsafe_allow_html=True)
 
 def main():
-    # Show sidebar only if logged in
-    if st.session_state.logged_in:
-        with st.sidebar:
-            show_sidebar()
+    """Main app logic"""
     
-    # Main content
-    if not st.session_state.logged_in:
-        show_login()
-    else:
-        show_main_content()
-
-def show_sidebar():
-    st.title("🚗 RideShare Pro")
-    st.write(f"Welcome, {st.session_state.username}!")
-    
-    # Navigation
-    st.markdown("### 📱 Menu")
-    if st.button("🏠 Home", use_container_width=True):
-        st.session_state.current_page = 'home'
-        st.rerun()
-    if st.button("📜 Ride History", use_container_width=True):
-        st.session_state.current_page = 'history'
-        st.rerun()
-    
-    # Settings
-    st.markdown("### ⚙️ Settings")
-    if st.toggle("🌙 Dark Mode", value=st.session_state.dark_mode):
-        st.session_state.dark_mode = not st.session_state.dark_mode
-        st.rerun()
-    
-    # Logout
-    st.markdown("---")
-    if st.button("🚪 Logout", use_container_width=True):
-        st.session_state.logged_in = False
-        st.rerun()
-
-def show_main_content():
-    if st.session_state.current_page == 'home':
-        if st.session_state.current_ride:
-            show_active_ride()
-        else:
-            show_booking_page()
-    elif st.session_state.current_page == 'history':
-        show_ride_history()
+    if st.session_state.page == 'booking':
+        show_booking_page()
+    elif st.session_state.page == 'driver_assigned':
+        show_driver_assignment()
+    elif st.session_state.page == 'completed':
+        show_ride_completed()
 
 if __name__ == "__main__":
     main() 
