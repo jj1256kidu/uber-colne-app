@@ -1,8 +1,7 @@
-streamlit==1.32.0
-folium==0.15.1
-streamlit-folium==0.17.0
-geopy==2.4.1
+streamlit
+folium
+streamlit-folium
+geopy
 requests
 streamlit-lottie
-streamlit-autorefresh
-numpy 
+streamlit-autorefresh 
