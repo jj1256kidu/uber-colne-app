@@ -1,3 +1,4 @@
+import streamlit as st
 import folium
 from folium import plugins
 import numpy as np
