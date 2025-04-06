@@ -238,7 +238,16 @@ def show_driver_assignment():
     st_autorefresh(interval=2000, key="map_refresh")
     
     # Update driver progress
-    driver_progress = update_driver_location()
+    st.session_state.driver_progress += 0.02
+    if st.session_state.driver_progress >= 1.0:
+        st.session_state.driver_progress = 0.0
+    
+    # Get current driver location
+    driver_location = update_driver_location(
+        st.session_state.current_ride['pickup'],
+        st.session_state.current_ride['dropoff'],
+        st.session_state.driver_progress
+    )
     
     col1, col2 = st.columns([2, 1])
     
@@ -246,8 +255,21 @@ def show_driver_assignment():
         # Show map with current driver position
         m = create_map(
             pickup=st.session_state.current_ride['pickup'],
-            dropoff=st.session_state.current
+            dropoff=st.session_state.current_ride['dropoff'],
+            driver_location=driver_location
         )
+        folium_static(m, width=800, height=500)
+        
+        # Show progress bar
+        remaining_time = int((1 - st.session_state.driver_progress) * st.session_state.current_ride['eta'])
+        st.markdown(f"""
+            <div style='text-align: center; padding: 10px; background: white; border-radius: 10px; margin: 10px 0;'>
+                <h3>Arriving in {remaining_time} minutes</h3>
+                <div class="progress-bar">
+                    <div class="progress" style="width: {st.session_state.driver_progress * 100}%"></div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
     
     with col2:
         # Driver info
@@ -262,10 +284,6 @@ def show_driver_assignment():
                 </div>
             </div>
         """, unsafe_allow_html=True)
-        
-        # Show driver animation
-        if st.session_state.animations['driver']:
-            st_lottie(st.session_state.animations['driver'], height=200)
         
         # Cancel ride button
         if st.button("Cancel Ride", key="cancel_ride"):
