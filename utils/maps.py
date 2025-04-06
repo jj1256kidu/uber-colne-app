@@ -5,80 +5,60 @@ import numpy as np
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 
-def create_map(pickup, dropoff, show_driver=False, driver_location=None):
-    """Create a folium map with markers and route"""
-    try:
-        # Initialize geocoder
-        geolocator = Nominatim(user_agent="ridesharepro")
+def create_map(pickup=None, dropoff=None, driver_location=None):
+    """Create a map with markers and route"""
+    
+    # Default center (New York City)
+    center = [40.7128, -74.0060]
+    
+    # Create map
+    m = folium.Map(
+        location=center,
+        zoom_start=13,
+        tiles="cartodbpositron"
+    )
+    
+    # Add pickup and dropoff markers
+    if pickup and dropoff:
+        geolocator = Nominatim(user_agent="uber_clone")
         
-        # Get coordinates
+        # Add pickup marker
         pickup_loc = geolocator.geocode(pickup)
-        dropoff_loc = geolocator.geocode(dropoff)
-        
-        if not pickup_loc or not dropoff_loc:
-            raise ValueError("Could not geocode locations")
-        
-        # Calculate center point
-        center_lat = (pickup_loc.latitude + dropoff_loc.latitude) / 2
-        center_lon = (pickup_loc.longitude + dropoff_loc.longitude) / 2
-        
-        # Create map
-        m = folium.Map(
-            location=[center_lat, center_lon],
-            zoom_start=12,
-            tiles="cartodbpositron"
-        )
-        
-        # Add markers
         folium.Marker(
             [pickup_loc.latitude, pickup_loc.longitude],
             popup="Pickup",
-            icon=folium.Icon(color='green', icon='info-sign'),
-            tooltip="Pickup Location"
+            icon=folium.Icon(color='green')
         ).add_to(m)
         
+        # Add dropoff marker
+        dropoff_loc = geolocator.geocode(dropoff)
         folium.Marker(
             [dropoff_loc.latitude, dropoff_loc.longitude],
             popup="Dropoff",
-            icon=folium.Icon(color='red', icon='info-sign'),
-            tooltip="Dropoff Location"
+            icon=folium.Icon(color='red')
         ).add_to(m)
         
-        # Add driver marker if available
-        if show_driver and driver_location:
-            folium.Marker(
-                driver_location,
-                popup="Driver",
-                icon=folium.Icon(color='blue', icon='car', prefix='fa'),
-                tooltip="Driver Location"
-            ).add_to(m)
-        
         # Draw route
-        route = generate_route(
-            (pickup_loc.latitude, pickup_loc.longitude),
-            (dropoff_loc.latitude, dropoff_loc.longitude)
-        )
-        
+        route_coords = [
+            [pickup_loc.latitude, pickup_loc.longitude],
+            [dropoff_loc.latitude, dropoff_loc.longitude]
+        ]
         folium.PolyLine(
-            route,
+            route_coords,
             weight=3,
             color='blue',
             opacity=0.8
         ).add_to(m)
-        
-        # Add demand heatmap (simulated)
-        add_demand_heatmap(m, center_lat, center_lon)
-        
-        return m
     
-    except Exception as e:
-        print(f"Error creating map: {e}")
-        # Return default map centered on New York
-        return folium.Map(
-            location=[40.7128, -74.0060],
-            zoom_start=12,
-            tiles="cartodbpositron"
-        )
+    # Add driver marker
+    if driver_location:
+        folium.Marker(
+            driver_location,
+            popup="Driver",
+            icon=folium.Icon(color='blue', icon='car', prefix='fa')
+        ).add_to(m)
+    
+    return m
 
 def generate_route(start, end):
     """Generate a route between two points
@@ -118,4 +98,77 @@ def add_demand_heatmap(m, center_lat, center_lon):
         points.append([lat, lon, intensity])
     
     # Add heatmap layer
-    plugins.HeatMap(points).add_to(m) 
+    plugins.HeatMap(points).add_to(m)
+
+def update_driver_location():
+    """
+
+def show_driver_assignment():
+    """Show driver assignment and live tracking"""
+    
+    # Update driver location
+    if 'driver_location' not in st.session_state.current_ride:
+        st.session_state.current_ride['driver_location'] = update_driver_location()
+    
+    # Show map with route and driver
+    m = create_map(
+        pickup=st.session_state.current_ride['pickup'],
+        dropoff=st.session_state.current_ride['dropoff'],
+        driver_location=st.session_state.current_ride['driver_location']
+    )
+    folium_static(m, width=1200, height=800)
+    
+    # Driver info card
+    driver = st.session_state.current_ride['driver']
+    st.markdown(f"""
+        <div class="driver-info">
+            <img src="{driver['photo']}" class="driver-photo">
+            <div>
+                <h3>{driver['name']}</h3>
+                <div>{driver['car']} • {driver['plate']}</div>
+                <div class="rating">{'⭐' * int(driver['rating'])}</div>
+            </div>
+            <div style="margin-left: auto">
+                <h2>ETA: {st.session_state.current_ride['eta']} min</h2>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+def show_ride_completed():
+    """Show ride completion and rating screen"""
+    
+    st.markdown("""
+        <div style="text-align: center; padding: 40px;">
+            <h1>🎉 Ride Completed!</h1>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Rating and feedback
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("""
+            <div class="uber-card">
+                <h3>Rate your ride</h3>
+                <div class="rating" style="font-size: 40px; margin: 20px 0;">
+                    ⭐⭐⭐⭐⭐
+                </div>
+                <textarea placeholder="Additional feedback (optional)" 
+                          style="width: 100%; padding: 10px; border-radius: 10px; margin: 10px 0;"></textarea>
+                <button style="width: 100%; padding: 15px; border-radius: 30px; background: black; color: white; border: none; margin-top: 20px;">
+                    Submit Rating
+                </button>
+            </div>
+        """, unsafe_allow_html=True)
+
+def main():
+    """Main app logic"""
+    
+    if st.session_state.page == 'booking':
+        show_booking_page()
+    elif st.session_state.page == 'driver_assigned':
+        show_driver_assignment()
+    elif st.session_state.page == 'completed':
+        show_ride_completed()
+
+if __name__ == "__main__":
+    main() 
