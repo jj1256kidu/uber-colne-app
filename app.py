@@ -1,16 +1,21 @@
 import streamlit as st
-import folium
-from streamlit_folium import folium_static
 from datetime import datetime
 import time
 import random
-from geopy.distance import geodesic
-from geopy.geocoders import Nominatim
 import json
+
+# Handle optional imports
+try:
+    import folium
+    from streamlit_folium import folium_static
+    from geopy.distance import geodesic
+    from geopy.geocoders import Nominatim
+    MAPS_ENABLED = True
+except ImportError:
+    MAPS_ENABLED = False
 
 # Import custom modules
 from utils.auth import check_authentication, login_page
-from utils.maps import generate_route, create_map
 from utils.ride import calculate_fare, get_estimated_time
 from data.drivers import available_drivers
 
@@ -21,6 +26,10 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Check if maps functionality is available
+if not MAPS_ENABLED:
+    st.warning("Some features are disabled due to missing dependencies. Please install required packages using: pip install -r requirements.txt")
 
 # Load custom CSS
 with open('styles/style.css') as f:
@@ -76,8 +85,9 @@ def show_booking_interface():
             dropoff = st.text_input("Drop-off Location", "Central Park, New York")
             
             # Initialize map
-            m = create_map(pickup, dropoff)
-            folium_static(m)
+            if MAPS_ENABLED:
+                m = create_map(pickup, dropoff)
+                folium_static(m)
         
         with col2:
             st.header("📋 Ride Details")
@@ -118,13 +128,14 @@ def show_active_ride():
     
     with col1:
         # Show live map with driver location
-        m = create_map(
-            st.session_state.current_ride['pickup'],
-            st.session_state.current_ride['dropoff'],
-            show_driver=True,
-            driver_location=st.session_state.current_ride['driver_location']
-        )
-        folium_static(m)
+        if MAPS_ENABLED:
+            m = create_map(
+                st.session_state.current_ride['pickup'],
+                st.session_state.current_ride['dropoff'],
+                show_driver=True,
+                driver_location=st.session_state.current_ride['driver_location']
+            )
+            folium_static(m)
     
     with col2:
         # Show driver details
