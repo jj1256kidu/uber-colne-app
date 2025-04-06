@@ -6,85 +6,62 @@ from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 import random
 import math
-import time
 from streamlit_folium import folium_static
 
-def create_map(pickup=None, dropoff=None, driver_progress=0):
-    """Create a map with animated driver movement"""
-    try:
-        # Default center (New York City)
-        center = [40.7128, -74.0060]
-        
-        if pickup and dropoff:
-            geolocator = Nominatim(user_agent="uber_clone")
-            
-            # Get coordinates
-            pickup_loc = geolocator.geocode(pickup)
-            dropoff_loc = geolocator.geocode(dropoff)
-            
-            if pickup_loc and dropoff_loc:
-                # Update center
-                center = [
-                    (pickup_loc.latitude + dropoff_loc.latitude) / 2,
-                    (pickup_loc.longitude + dropoff_loc.longitude) / 2
-                ]
-                
-                # Create map
-                m = folium.Map(
-                    location=center,
-                    zoom_start=13,
-                    tiles="cartodbpositron"
-                )
-                
-                # Add pickup marker
-                folium.Marker(
-                    [pickup_loc.latitude, pickup_loc.longitude],
-                    popup="Pickup",
-                    icon=folium.Icon(color='green', icon='info-sign'),
-                    tooltip="Pickup Location"
-                ).add_to(m)
-                
-                # Add dropoff marker
-                folium.Marker(
-                    [dropoff_loc.latitude, dropoff_loc.longitude],
-                    popup="Dropoff",
-                    icon=folium.Icon(color='red', icon='info-sign'),
-                    tooltip="Dropoff Location"
-                ).add_to(m)
-                
-                # Create route points
-                route_points = create_route_points(
-                    [pickup_loc.latitude, pickup_loc.longitude],
-                    [dropoff_loc.latitude, dropoff_loc.longitude]
-                )
-                
-                # Draw route line
-                folium.PolyLine(
-                    route_points,
-                    weight=3,
-                    color='blue',
-                    opacity=0.8
-                ).add_to(m)
-                
-                # Add driver marker if progress is provided
-                if driver_progress > 0:
-                    current_point_index = int(driver_progress * (len(route_points) - 1))
-                    if current_point_index < len(route_points):
-                        driver_position = route_points[current_point_index]
-                        folium.Marker(
-                            driver_position,
-                            icon=create_car_icon(),
-                            tooltip="Driver"
-                        ).add_to(m)
-                
-                return m
-        
-        # Return default map if no valid locations
-        return folium.Map(location=center, zoom_start=12, tiles="cartodbpositron")
+def create_map(pickup=None, dropoff=None, driver_location=None):
+    """Create a map with markers and route"""
     
-    except Exception as e:
-        st.error(f"Error creating map: {str(e)}")
-        return folium.Map(location=[40.7128, -74.0060], zoom_start=12)
+    # Default center (New York City)
+    center = [40.7128, -74.0060]
+    
+    # Create map
+    m = folium.Map(location=center, zoom_start=13, tiles="cartodbpositron")
+    
+    # Add random cars
+    for _ in range(5):
+        car_location = [
+            center[0] + random.uniform(-0.01, 0.01),
+            center[1] + random.uniform(-0.01, 0.01)
+        ]
+        folium.Marker(
+            car_location,
+            popup="Available",
+            icon=folium.Icon(icon='car', prefix='fa')
+        ).add_to(m)
+    
+    # Add markers if locations provided
+    if pickup:
+        folium.Marker(
+            pickup,
+            popup="Pickup",
+            icon=folium.Icon(color='green')
+        ).add_to(m)
+    
+    if dropoff:
+        folium.Marker(
+            dropoff,
+            popup="Dropoff",
+            icon=folium.Icon(color='red')
+        ).add_to(m)
+    
+    if driver_location:
+        folium.Marker(
+            driver_location,
+            popup="Driver",
+            icon=folium.Icon(color='blue', icon='car', prefix='fa')
+        ).add_to(m)
+        
+        # Draw route line
+        if pickup and dropoff:
+            route = [pickup, driver_location, dropoff]
+            folium.PolyLine(
+                route,
+                weight=2,
+                color='blue',
+                opacity=0.8
+            ).add_to(m)
+    
+    return m
 
 def generate_route(start, end):
     """Generate a route between two points
@@ -126,30 +103,43 @@ def add_demand_heatmap(m, center_lat, center_lon):
     # Add heatmap layer
     plugins.HeatMap(points).add_to(m)
 
-def update_driver_location():
-    """Update driver location for simulation"""
-    if 'driver_progress' not in st.session_state:
-        st.session_state.driver_progress = 0.0
+def update_driver_location(pickup, dropoff, progress):
+    """Calculate driver's current location based on progress"""
+    if not pickup or not dropoff:
+        return None
     
-    # Increment progress
-    st.session_state.driver_progress += 0.02
-    if st.session_state.driver_progress >= 1.0:
-        st.session_state.driver_progress = 0.0
+    # Create a curved route
+    def create_curve_point(start, end, progress):
+        direct = np.array(end) - np.array(start)
+        perp = np.array([-direct[1], direct[0]])
+        curve = np.sin(progress * np.pi) * perp * 0.01
+        point = start + progress * direct + curve
+        return point.tolist()
     
-    return st.session_state.driver_progress
+    current_point = create_curve_point(
+        np.array(pickup),
+        np.array(dropoff),
+        progress
+    )
+    
+    return current_point
 
 def show_driver_assignment():
     """Show driver assignment and live tracking"""
     
     # Update driver location
     if 'driver_location' not in st.session_state.current_ride:
-        st.session_state.current_ride['driver_location'] = update_driver_location()
+        st.session_state.current_ride['driver_location'] = update_driver_location(
+            st.session_state.current_ride['pickup'],
+            st.session_state.current_ride['dropoff'],
+            st.session_state.current_ride['driver_location']
+        )
     
     # Show map with route and driver
     m = create_map(
         pickup=st.session_state.current_ride['pickup'],
         dropoff=st.session_state.current_ride['dropoff'],
-        driver_progress=st.session_state.current_ride['driver_location']
+        driver_location=st.session_state.current_ride['driver_location']
     )
     folium_static(m, width=1200, height=800)
     
@@ -234,8 +224,8 @@ def show_live_tracking():
     """Show live tracking with auto-refresh"""
     
     # Initialize progress in session state if not exists
-    if 'driver_progress' not in st.session_state:
-        st.session_state.driver_progress = 0.0
+    if 'driver_location' not in st.session_state.current_ride:
+        st.session_state.current_ride['driver_location'] = 0.0
     
     # Get ride details from session state
     ride = st.session_state.current_ride
@@ -244,19 +234,19 @@ def show_live_tracking():
     m = create_map(
         pickup=ride['pickup'],
         dropoff=ride['dropoff'],
-        driver_progress=st.session_state.driver_progress
+        driver_location=st.session_state.current_ride['driver_location']
     )
     
     # Display map
     folium_static(m, width=800, height=500)
     
     # Update progress for next refresh
-    st.session_state.driver_progress += 0.02  # Increment by 2%
-    if st.session_state.driver_progress >= 1.0:
-        st.session_state.driver_progress = 0.0
+    st.session_state.current_ride['driver_location'] += 0.02  # Increment by 2%
+    if st.session_state.current_ride['driver_location'] >= 1.0:
+        st.session_state.current_ride['driver_location'] = 0.0
     
     # Calculate ETA
-    remaining_time = int((1 - st.session_state.driver_progress) * ride['eta'])
+    remaining_time = int((1 - st.session_state.current_ride['driver_location']) * ride['eta'])
     
     # Show status
     status = "Arriving in {} minutes".format(remaining_time)
@@ -264,7 +254,7 @@ def show_live_tracking():
         <div style='text-align: center; padding: 10px; background: white; border-radius: 10px; margin: 10px 0;'>
             <h3>{status}</h3>
             <div class="progress-bar">
-                <div class="progress" style="width: {st.session_state.driver_progress * 100}%"></div>
+                <div class="progress" style="width: {st.session_state.current_ride['driver_location'] * 100}%"></div>
             </div>
         </div>
     """, unsafe_allow_html=True)
