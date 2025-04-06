@@ -1,17 +1,48 @@
 import streamlit as st
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 from geopy.geocoders import Nominatim
 from utils.maps import create_map
 from utils.payment import show_payment_page
 from geopy.distance import geodesic
 
-def calculate_fare(distance):
-    """Calculate ride fare"""
-    base_fare = 5.0
-    per_km = 2.0
-    return base_fare + (distance * per_km)
+MOCK_DRIVERS = [
+    {
+        'name': 'John Smith',
+        'photo': 'https://randomuser.me/api/portraits/men/1.jpg',
+        'car': 'Toyota Camry',
+        'plate': 'ABC123',
+        'rating': 4.9
+    },
+    {
+        'name': 'Sarah Johnson',
+        'photo': 'https://randomuser.me/api/portraits/women/1.jpg',
+        'car': 'Honda Civic',
+        'plate': 'XYZ789',
+        'rating': 4.8
+    },
+    {
+        'name': 'Michael Brown',
+        'photo': 'https://randomuser.me/api/portraits/men/2.jpg',
+        'car': 'Tesla Model 3',
+        'plate': 'EV2023',
+        'rating': 5.0
+    },
+    {
+        'name': 'Emma Wilson',
+        'photo': 'https://randomuser.me/api/portraits/women/2.jpg',
+        'car': 'Hyundai Sonata',
+        'plate': 'HYN456',
+        'rating': 4.7
+    }
+]
+
+def calculate_fare(distance_km):
+    """Calculate estimated fare based on distance"""
+    base_fare = 5.00
+    per_km_rate = 2.50
+    return round(base_fare + (distance_km * per_km_rate), 2)
 
 def estimate_time(distance):
     """Estimate ride time in minutes"""
@@ -175,4 +206,21 @@ def start_ride_button():
 def end_ride_button():
     """Button to end the ride"""
     if st.button("End Ride"):
-        show_payment_page() 
+        show_payment_page()
+
+def get_random_driver():
+    """Return a random driver from mock data"""
+    return random.choice(MOCK_DRIVERS)
+
+def calculate_eta():
+    """Calculate estimated time of arrival in minutes"""
+    return random.randint(3, 15)
+
+def get_driver_status(progress):
+    """Return driver status message based on progress"""
+    if progress < 0.3:
+        return "Driver is heading to pickup location"
+    elif progress < 0.8:
+        return "En route to destination"
+    else:
+        return "Almost there!" 
