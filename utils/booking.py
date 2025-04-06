@@ -25,28 +25,34 @@ def show_booking_page():
         pickup = st.selectbox(
             "Pickup Location",
             options=popular_locations,
-            index=0
+            index=0,
+            key="pickup_location"
         )
-
-        # Location inputs with autocomplete
+        
         dropoff = st.selectbox(
-            "Dropoff Location",
-            options
+            "Drop-off Location",
+            options=popular_locations,
+            index=1,
+            key="dropoff_location"
         )
-
-        # Date and time inputs
-        date = st.date_input("Date")
-        time = st.time_input("Time")
-
-        # Button to confirm booking
-        if st.button("Confirm Booking"):
-            # Process booking
-            pass
-
+        
+        # Show map
+        try:
+            m = create_map(pickup, dropoff)
+            folium_static(m)
+        except Exception as e:
+            st.error("Could not load map. Please check your internet connection.")
+    
     with col2:
-        # Map display
-        map = create_map(pickup, dropoff)
-        folium_static(map)
+        st.markdown("### 🚗 Ride Details")
+        
+        # Calculate ride details
+        distance = calculate_distance(pickup, dropoff)
+        fare = calculate_fare(distance)
+        eta = estimate_time(distance)
+        
+        # Show ride options
+        show_ride_options(distance, fare, eta)
 
     # Additional booking form elements
     # ...
