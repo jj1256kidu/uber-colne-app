@@ -44,21 +44,29 @@ st.markdown("""
     
     /* Input field styling */
     .stTextInput input {
-        border-radius: 30px;
-        border: none;
-        background: #f8f9fa;
-        padding: 15px 20px;
-        font-size: 16px;
+        border-radius: 30px !important;
+        border: none !important;
+        background: #f8f9fa !important;
+        padding: 15px 20px !important;
+        font-size: 16px !important;
     }
     
     /* Button styling */
     .stButton button {
-        border-radius: 30px;
-        padding: 10px 25px;
-        background: black;
-        color: white;
-        border: none;
-        font-weight: 600;
+        border-radius: 30px !important;
+        padding: 15px !important;
+        width: 100% !important;
+        font-weight: 600 !important;
+    }
+    
+    .stButton button:first-child {
+        background-color: black !important;
+        color: white !important;
+    }
+    
+    .stButton button:last-child {
+        background-color: #f8f9fa !important;
+        color: black !important;
     }
     
     /* Card styling */
@@ -120,9 +128,29 @@ st.markdown("""
         font-weight: 600;
     }
     
+    /* Recent location styling */
+    .recent-location {
+        padding: 10px;
+        border-radius: 10px;
+        margin: 5px 0;
+        cursor: pointer;
+    }
+    
+    .recent-location:hover {
+        background-color: #f8f9fa;
+    }
+    
+    /* Remove padding from main container */
+    .main .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 0 !important;
+        max-width: 100% !important;
+    }
+    
     /* Hide Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    header {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -137,44 +165,35 @@ def show_booking_page():
         m = create_map()
         folium_static(m, width=1200, height=800)
     
-    # Bottom drawer
-    with st.container():
-        st.markdown(f"""
-            <div class="bottom-drawer">
-                <h3>Good morning, {st.session_state.username}</h3>
-                <div class="uber-card">
-                    <div style="position: relative;">
-                        <input type="text" placeholder="Where to?" 
-                               style="width: 100%; padding: 15px; border-radius: 30px; border: none; background: #f8f9fa;">
-                        <span style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%);">📍</span>
-                    </div>
-                    
-                    <div style="margin-top: 20px;">
-                        <h4>Recent Locations</h4>
-                        {"".join([f'''
-                            <div class="location-item">
-                                <span style="margin-right: 10px;">📍</span>
-                                <div>
-                                    <div style="font-weight: 600;">{loc['name']}</div>
-                                    <div style="color: #666; font-size: 14px;">{loc['address']}</div>
-                                </div>
-                            </div>
-                        ''' for loc in recent_locations])}
-                    </div>
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <div style="display: flex; justify-content: center; gap: 20px;">
-                        <button style="flex: 1; padding: 15px; border-radius: 30px; background: black; color: white; border: none;">
-                            🚗 Rides
-                        </button>
-                        <button style="flex: 1; padding: 15px; border-radius: 30px; background: #f8f9fa; color: black; border: none;">
-                            🍽️ Eats
-                        </button>
-                    </div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
+    # Bottom drawer using Streamlit native components
+    st.markdown("### Good morning, {}".format(st.session_state.username))
+    
+    # Where to input
+    st.text_input("", placeholder="Where to?", key="destination")
+    
+    # Recent locations
+    st.markdown("#### Recent Locations")
+    
+    # Create columns for each location
+    for location in recent_locations:
+        col1, col2 = st.columns([1, 6])
+        with col1:
+            st.markdown("📍")
+        with col2:
+            st.markdown(f"""
+                **{location['name']}**  
+                {location['address']}
+            """)
+    
+    # Ride/Eats toggle
+    st.markdown("---")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🚗 Rides", use_container_width=True):
+            st.session_state.mode = 'rides'
+    with col2:
+        if st.button("🍽️ Eats", use_container_width=True):
+            st.session_state.mode = 'eats'
 
 def show_driver_assignment():
     """Show driver assignment and live tracking"""
@@ -234,12 +253,12 @@ def show_ride_completed():
         """, unsafe_allow_html=True)
 
 # Initialize session state
-if 'page' not in st.session_state:
-    st.session_state.page = 'booking'
-if 'current_ride' not in st.session_state:
-    st.session_state.current_ride = None
 if 'username' not in st.session_state:
     st.session_state.username = "John"
+if 'mode' not in st.session_state:
+    st.session_state.mode = 'rides'
+if 'current_ride' not in st.session_state:
+    st.session_state.current_ride = None
 
 def main():
     """Main app logic"""
