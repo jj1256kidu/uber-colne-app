@@ -124,7 +124,7 @@ def main():
             st.write(f"Welcome, {st.session_state.username}!")
             if st.button("Logout"):
                 st.session_state.logged_in = False
-                st.experimental_rerun()
+                st.rerun()
         
         # Dark mode toggle
         st.write("---")
@@ -200,7 +200,7 @@ def show_booking_interface():
                     time.sleep(2)  # Simulate processing
                     assign_driver()
                 st.success("Ride booked successfully!")
-                st.experimental_rerun()
+                st.rerun()
 
 def show_active_ride():
     st.header("🚗 Your Active Ride")
@@ -295,7 +295,7 @@ def show_feedback_form():
         })
         st.session_state.current_ride = None
         st.success("Thank you for your feedback!")
-        st.experimental_rerun()
+        st.rerun()
 
 if __name__ == "__main__":
     main() 
