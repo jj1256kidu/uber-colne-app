@@ -126,14 +126,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state
-if 'page' not in st.session_state:
-    st.session_state.page = 'booking'
-if 'current_ride' not in st.session_state:
-    st.session_state.current_ride = None
-if 'username' not in st.session_state:
-    st.session_state.username = "John"
-
 def show_booking_page():
     """Main booking interface with map and bottom drawer"""
     
@@ -147,9 +139,9 @@ def show_booking_page():
     
     # Bottom drawer
     with st.container():
-        st.markdown("""
+        st.markdown(f"""
             <div class="bottom-drawer">
-                <h3>Good morning, {}</h3>
+                <h3>Good morning, {st.session_state.username}</h3>
                 <div class="uber-card">
                     <div style="position: relative;">
                         <input type="text" placeholder="Where to?" 
@@ -159,7 +151,15 @@ def show_booking_page():
                     
                     <div style="margin-top: 20px;">
                         <h4>Recent Locations</h4>
-                        {}
+                        {"".join([f'''
+                            <div class="location-item">
+                                <span style="margin-right: 10px;">📍</span>
+                                <div>
+                                    <div style="font-weight: 600;">{loc['name']}</div>
+                                    <div style="color: #666; font-size: 14px;">{loc['address']}</div>
+                                </div>
+                            </div>
+                        ''' for loc in recent_locations])}
                     </div>
                 </div>
                 
@@ -174,18 +174,7 @@ def show_booking_page():
                     </div>
                 </div>
             </div>
-        """.format(
-            st.session_state.username,
-            "".join([f"""
-                <div class="location-item">
-                    <span style="margin-right: 10px;">📍</span>
-                    <div>
-                        <div style="font-weight: 600;">{loc['name']}</div>
-                        <div style="color: #666; font-size: 14px;">{loc['address']}</div>
-                    </div>
-                </div>
-            """ for loc in recent_locations])
-        ), unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
 def show_driver_assignment():
     """Show driver assignment and live tracking"""
@@ -209,7 +198,7 @@ def show_driver_assignment():
             <img src="{driver['photo']}" class="driver-photo">
             <div>
                 <h3>{driver['name']}</h3>
-                <div>{driver['car']} • {driver['plate']}</div>
+                <div>{driver['car']} - {driver['plate']}</div>
                 <div class="rating">{'⭐' * int(driver['rating'])}</div>
             </div>
             <div style="margin-left: auto">
@@ -243,6 +232,14 @@ def show_ride_completed():
                 </button>
             </div>
         """, unsafe_allow_html=True)
+
+# Initialize session state
+if 'page' not in st.session_state:
+    st.session_state.page = 'booking'
+if 'current_ride' not in st.session_state:
+    st.session_state.current_ride = None
+if 'username' not in st.session_state:
+    st.session_state.username = "John"
 
 def main():
     """Main app logic"""
