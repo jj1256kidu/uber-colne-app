@@ -1,3 +1,5 @@
+import streamlit as st
+
 def load_css():
     """Load custom CSS styles"""
     
