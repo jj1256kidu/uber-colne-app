@@ -24,7 +24,8 @@ def show_booking_page():
         # Location inputs with autocomplete
         pickup = st.selectbox(
             "Pickup Location",
-            options
+            options=popular_locations,
+            index=0
         )
 
         # Location inputs with autocomplete
