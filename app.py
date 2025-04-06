@@ -8,14 +8,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for mobile-style UI
+# Custom CSS
 st.markdown("""
 <style>
-    /* Reset and base styles */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+    /* Base styles */
+    .stApp {
+        margin: 0 auto;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     /* Hide Streamlit components */
@@ -23,79 +22,32 @@ st.markdown("""
         display: none !important;
     }
 
-    .stApp {
-        background: #f8f9fa !important;
-    }
-
-    /* Mobile container */
-    .mobile-container {
+    /* Custom styles */
+    .css-1d391kg {  /* Streamlit containers */
+        padding: 1rem 1rem 10rem 1rem;
         max-width: 414px;
         margin: 0 auto;
-        padding: 24px;
-        background: white;
-        min-height: 100vh;
-        position: relative;
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* Header section */
-    .header {
-        margin-bottom: 32px;
-    }
-
-    .greeting {
-        font-size: 28px;
-        font-weight: 600;
-        color: #1a1a1a;
-        margin-bottom: 4px;
-    }
-
-    .subtitle {
-        color: #666;
-        font-size: 15px;
-    }
-
-    /* Search section */
-    .search-box {
-        background: #f8f9fa;
+    .stTextInput > div > div > input {
         border-radius: 28px;
-        padding: 16px 24px;
-        display: flex;
-        align-items: center;
-        margin-bottom: 24px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-    }
-
-    .search-box:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .search-input {
-        border: none;
-        background: none;
+        padding: 16px 20px;
         font-size: 16px;
-        width: 100%;
-        padding-right: 16px;
+        border: none;
+        background: #f8f9fa;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
-    .search-icon {
-        color: #1a1a1a;
-        font-size: 20px;
+    .stTextInput > div > div > input:focus {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
     /* Location cards */
-    .locations-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-        margin-bottom: 32px;
-    }
-
     .location-card {
         background: #f8f9fa;
-        padding: 20px;
+        padding: 16px;
         border-radius: 16px;
+        margin-bottom: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
     }
@@ -105,80 +57,70 @@ st.markdown("""
         background: #f0f0f0;
     }
 
-    .location-icon {
-        font-size: 24px;
-        margin-bottom: 12px;
+    /* Services grid */
+    .services-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin: 20px 0;
     }
 
-    .location-name {
-        font-weight: 600;
-        margin-bottom: 4px;
-        color: #1a1a1a;
-    }
-
-    .location-address {
-        font-size: 13px;
-        color: #666;
-        line-height: 1.4;
-    }
-
-    /* Bottom navigation */
-    .bottom-nav {
-        position: fixed;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 100%;
-        max-width: 414px;
+    .service-item {
         background: white;
-        padding: 16px 24px;
-        display: flex;
-        justify-content: space-between;
-        box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
-        border-top-left-radius: 24px;
-        border-top-right-radius: 24px;
-    }
-
-    .nav-button {
-        padding: 12px 32px;
-        border-radius: 24px;
-        font-weight: 500;
-        font-size: 15px;
+        border: 1px solid #f0f0f0;
+        border-radius: 16px;
+        padding: 16px 12px;
+        text-align: center;
         cursor: pointer;
         transition: all 0.2s ease;
     }
 
-    .nav-button.active {
-        background: #1a1a1a;
+    .service-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+
+    /* Suggestions scroll */
+    .suggestions {
+        display: flex;
+        overflow-x: auto;
+        gap: 12px;
+        padding: 8px 0;
+        margin: 16px 0;
+        scrollbar-width: none;
+    }
+
+    .suggestions::-webkit-scrollbar {
+        display: none;
+    }
+
+    .suggestion-btn {
+        background: white;
+        border: 1px solid #f0f0f0;
+        border-radius: 24px;
+        padding: 8px 20px;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .suggestion-btn.active {
+        background: black;
         color: white;
+        border-color: black;
     }
 
-    .nav-button:not(.active) {
-        color: #666;
-    }
-
-    .nav-button:not(.active):hover {
-        background: #f0f0f0;
-    }
-
-    /* Recent rides section */
+    /* Section titles */
     .section-title {
+        font-size: 20px;
         font-weight: 600;
+        margin: 24px 0 16px 0;
         color: #1a1a1a;
-        margin-bottom: 16px;
-    }
-
-    .recent-rides {
-        margin-bottom: 80px;  /* Space for bottom nav */
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state
-if 'active_tab' not in st.session_state:
-    st.session_state.active_tab = 'rides'
-
-# Get greeting based on time of day
+# Get greeting
 def get_greeting():
     hour = datetime.now().hour
     if 5 <= hour < 12:
@@ -188,52 +130,110 @@ def get_greeting():
     else:
         return "Good evening"
 
-# Main app layout
-st.markdown(f"""
-<div class="mobile-container">
-    <!-- Header section -->
-    <div class="header">
-        <div class="greeting">{get_greeting()}, Joost</div>
-        <div class="subtitle">Where are you going today?</div>
-    </div>
+# Services data
+SERVICES = [
+    {"name": "Ride", "icon": "🚗"},
+    {"name": "Package", "icon": "📦"},
+    {"name": "Hourly", "icon": "⏰"},
+    {"name": "Rent", "icon": "🔑"},
+    {"name": "Transit", "icon": "🚇"},
+    {"name": "Charter", "icon": "🚐"},
+    {"name": "Explore", "icon": "🗺️"},
+    {"name": "Travel", "icon": "✈️"}
+]
 
-    <!-- Search box -->
-    <div class="search-box">
-        <input type="text" class="search-input" placeholder="Where to?">
-        <span class="search-icon">📍</span>
-    </div>
+# Suggestions
+SUGGESTIONS = ["Ride", "Reserve", "Package", "Rent"]
 
-    <!-- Saved locations -->
-    <div class="locations-grid">
-        <!-- Work location -->
-        <div class="location-card">
-            <div class="location-icon">🏢</div>
-            <div class="location-name">Work</div>
-            <div class="location-address">1455 Market Street</div>
+# Main app
+def main():
+    # Header
+    st.markdown(f"<h1 style='font-size: 24px; font-weight: 600; margin-bottom: 4px;'>{get_greeting()}, Joost</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #666; margin-bottom: 20px;'>Where are you going today?</p>", unsafe_allow_html=True)
+
+    # Search box
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        st.text_input("", placeholder="Where to?", label_visibility="collapsed")
+    with col2:
+        st.markdown("<div style='text-align: center; padding-top: 15px;'>📍</div>", unsafe_allow_html=True)
+
+    # Suggestions
+    st.markdown("<div class='suggestions'>", unsafe_allow_html=True)
+    for suggestion in SUGGESTIONS:
+        st.markdown(
+            f"<button class='suggestion-btn {'active' if suggestion == 'Ride' else ''}'>{suggestion}</button>",
+            unsafe_allow_html=True
+        )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Services section
+    st.markdown("<div class='section-title'>Go Anywhere, Get Anything</div>", unsafe_allow_html=True)
+    
+    # Services grid
+    st.markdown("<div class='services-grid'>", unsafe_allow_html=True)
+    for service in SERVICES:
+        st.markdown(f"""
+            <div class='service-item'>
+                <div style='font-size: 24px; margin-bottom: 8px;'>{service['icon']}</div>
+                <div style='font-size: 14px; font-weight: 500;'>{service['name']}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Saved locations
+    st.markdown("<div class='section-title'>Saved Places</div>", unsafe_allow_html=True)
+    
+    # Work location
+    st.markdown("""
+        <div class='location-card'>
+            <div style='font-size: 24px; margin-bottom: 8px;'>🏢</div>
+            <div style='font-weight: 600; margin-bottom: 4px;'>Work</div>
+            <div style='font-size: 13px; color: #666;'>1455 Market Street</div>
         </div>
-
-        <!-- Home location -->
-        <div class="location-card">
-            <div class="location-icon">🏠</div>
-            <div class="location-name">Home</div>
-            <div class="location-address">1600 Michigan Avenue</div>
+    """, unsafe_allow_html=True)
+    
+    # Home location
+    st.markdown("""
+        <div class='location-card'>
+            <div style='font-size: 24px; margin-bottom: 8px;'>🏠</div>
+            <div style='font-weight: 600; margin-bottom: 4px;'>Home</div>
+            <div style='font-size: 13px; color: #666;'>1600 Michigan Avenue</div>
         </div>
-    </div>
+    """, unsafe_allow_html=True)
 
-    <!-- Recent rides section -->
-    <div class="recent-rides">
-        <div class="section-title">Recent Rides</div>
-        <div class="location-card">
-            <div class="location-icon">📍</div>
-            <div class="location-name">Central Park</div>
-            <div class="location-address">New York, NY 10024</div>
+    # Bottom navigation
+    st.markdown("""
+        <div style='
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 414px;
+            background: white;
+            padding: 16px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        '>
+            <div style='
+                background: black;
+                color: white;
+                padding: 12px 32px;
+                border-radius: 24px;
+                font-weight: 500;
+            '>🚗 Rides</div>
+            <div style='
+                padding: 12px 32px;
+                border-radius: 24px;
+                color: #666;
+                font-weight: 500;
+            '>🍔 Eats</div>
         </div>
-    </div>
+    """, unsafe_allow_html=True)
 
-    <!-- Bottom navigation -->
-    <div class="bottom-nav">
-        <div class="nav-button active">🚗 Rides</div>
-        <div class="nav-button">🍔 Eats</div>
-    </div>
-</div>
-""", unsafe_allow_html=True) 
+if __name__ == "__main__":
+    main() 
