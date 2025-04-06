@@ -1,5 +1,6 @@
 import streamlit as st
 from datetime import datetime
+from styles.theme import get_css_theme
 
 # Configure the page
 st.set_page_config(
@@ -8,117 +9,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS
-st.markdown("""
-<style>
-    /* Base styles */
-    .stApp {
-        margin: 0 auto;
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
-    /* Hide Streamlit components */
-    #MainMenu, header, footer {
-        display: none !important;
-    }
-
-    /* Custom styles */
-    .css-1d391kg {  /* Streamlit containers */
-        padding: 1rem 1rem 10rem 1rem;
-        max-width: 414px;
-        margin: 0 auto;
-    }
-
-    .stTextInput > div > div > input {
-        border-radius: 28px;
-        padding: 16px 20px;
-        font-size: 16px;
-        border: none;
-        background: #f8f9fa;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    .stTextInput > div > div > input:focus {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-
-    /* Location cards */
-    .location-card {
-        background: #f8f9fa;
-        padding: 16px;
-        border-radius: 16px;
-        margin-bottom: 12px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .location-card:hover {
-        transform: translateY(-2px);
-        background: #f0f0f0;
-    }
-
-    /* Services grid */
-    .services-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        margin: 20px 0;
-    }
-
-    .service-item {
-        background: white;
-        border: 1px solid #f0f0f0;
-        border-radius: 16px;
-        padding: 16px 12px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .service-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-    }
-
-    /* Suggestions scroll */
-    .suggestions {
-        display: flex;
-        overflow-x: auto;
-        gap: 12px;
-        padding: 8px 0;
-        margin: 16px 0;
-        scrollbar-width: none;
-    }
-
-    .suggestions::-webkit-scrollbar {
-        display: none;
-    }
-
-    .suggestion-btn {
-        background: white;
-        border: 1px solid #f0f0f0;
-        border-radius: 24px;
-        padding: 8px 20px;
-        white-space: nowrap;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .suggestion-btn.active {
-        background: black;
-        color: white;
-        border-color: black;
-    }
-
-    /* Section titles */
-    .section-title {
-        font-size: 20px;
-        font-weight: 600;
-        margin: 24px 0 16px 0;
-        color: #1a1a1a;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Apply the theme
+st.markdown(get_css_theme(), unsafe_allow_html=True)
 
 # Get greeting
 def get_greeting():
