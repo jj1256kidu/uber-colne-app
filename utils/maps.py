@@ -4,6 +4,7 @@ from folium import plugins
 import numpy as np
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
+import random
 
 def create_map(pickup=None, dropoff=None, driver_location=None):
     """Create a map with markers and route"""
@@ -101,7 +102,12 @@ def add_demand_heatmap(m, center_lat, center_lon):
     plugins.HeatMap(points).add_to(m)
 
 def update_driver_location():
-    """
+    """Simulate driver movement"""
+    # Random location near NYC
+    return [
+        40.7128 + random.uniform(-0.01, 0.01),
+        -74.0060 + random.uniform(-0.01, 0.01)
+    ]
 
 def show_driver_assignment():
     """Show driver assignment and live tracking"""
