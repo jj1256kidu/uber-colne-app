@@ -27,13 +27,81 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Check if maps functionality is available
-if not MAPS_ENABLED:
-    st.warning("Some features are disabled due to missing dependencies. Please install required packages using: pip install -r requirements.txt")
+# Custom CSS
+css = """
+/* Card styles */
+.metric-card {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 10px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
 
-# Load custom CSS
-with open('styles/style.css') as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+.driver-card {
+    background-color: #ffffff;
+    border-radius: 15px;
+    padding: 20px;
+    margin: 15px 0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.driver-card img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+}
+
+.status-card {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+/* Progress bar */
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress {
+    height: 100%;
+    background-color: #007bff;
+    transition: width 0.3s ease;
+}
+
+/* Dark mode adjustments */
+.dark-mode .metric-card,
+.dark-mode .driver-card,
+.dark-mode .status-card {
+    background-color: #2d2d2d;
+    color: #ffffff;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.stButton button {
+    transition: transform 0.2s ease;
+}
+
+.stButton button:hover {
+    transform: scale(1.02);
+}
+"""
+
+# Apply custom CSS
+st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
 
 # Initialize session state variables
 if 'logged_in' not in st.session_state:
