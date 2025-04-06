@@ -2,9 +2,9 @@ import streamlit as st
 import time
 from datetime import datetime
 import random
+from geopy.geocoders import Nominatim
 from utils.maps import create_map
 from utils.payment import show_payment_page
-from geopy.geocoders import Nominatim
 
 def calculate_fare(distance):
     """Calculate ride fare based on distance"""
