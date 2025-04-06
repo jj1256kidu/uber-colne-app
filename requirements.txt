@@ -2,6 +2,7 @@ streamlit
 folium
 streamlit-folium
 geopy
-requests
 streamlit-lottie
-streamlit-autorefresh 
+streamlit-autorefresh
+requests
+numpy 
