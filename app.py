@@ -12,15 +12,18 @@ from streamlit_autorefresh import st_autorefresh
 
 # Import custom modules
 from utils.maps import create_map, update_driver_location, show_live_tracking
-from utils.ride import calculate_fare, estimate_time
+from utils.ride import calculate_fare, estimate_time, get_random_driver, calculate_eta
 from data.locations import saved_locations, recent_locations
 from data.drivers import available_drivers
+from utils.animations import load_lottie_url
+from data.mock_data import SAVED_LOCATIONS, LOTTIE_URLS
 
 # Lottie URLs
 LOTTIE_URLS = {
     'loading': "https://lottie.host/f0ec98d5-ec26-4fc5-9fdc-5a497e20928d/Il6pdCzR0P.json",
     'driver': "https://lottie.host/fd37c232-6c9f-4594-8480-f45f563b3f7b/d82GU0V7zv.json",
-    'success': "https://lottie.host/3e0b3c5c-1cf2-45a4-a1db-3253cb464aa2/kN0VzYZR4M.json"
+    'success': "https://lottie.host/3e0b3c5c-1cf2-45a4-a1db-3253cb464aa2/kN0VzYZR4M.json",
+    'ride_complete': "https://lottie.host/3e0b3c5c-1cf2-45a4-a1db-3253cb464aa2/kN0VzYZR4M.json"
 }
 
 def load_lottie_url(url):
@@ -174,245 +177,230 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Custom CSS for mobile-style UI
+st.markdown("""
+<style>
+    /* Base styles */
+    .stApp {
+        max-width: 960px;
+        margin: 0 auto;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    /* Mobile container */
+    .mobile-container {
+        max-width: 414px;
+        margin: 0 auto;
+        padding: 20px;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    /* Input fields */
+    .stTextInput > div > div > input {
+        border-radius: 25px;
+        padding: 15px 20px;
+        border: 1px solid #eee;
+        background: #f8f9fa;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        border-radius: 25px;
+        padding: 10px 25px;
+        border: none;
+        background: black;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    /* Location cards */
+    .location-card {
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 15px;
+        margin: 10px 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .location-card:hover {
+        background: #eee;
+    }
+    
+    /* Driver card */
+    .driver-card {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin: 20px 0;
+    }
+    
+    /* Progress bar */
+    .progress-bar {
+        height: 4px;
+        background: #eee;
+        border-radius: 2px;
+        overflow: hidden;
+    }
+    .progress {
+        height: 100%;
+        background: black;
+        transition: width 0.3s ease;
+    }
+    
+    /* Rating stars */
+    .rating {
+        font-size: 24px;
+        color: gold;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Initialize session state
+if 'page' not in st.session_state:
+    st.session_state.update({
+        'page': 'booking',
+        'current_ride': None,
+        'driver_progress': 0.0,
+        'username': 'Joost',
+        'mode': 'rides'
+    })
+
 def show_booking_page():
-    """Main booking interface with map and bottom drawer"""
+    """Display the main booking interface"""
+    # Greeting based on time of day
+    hour = datetime.now().hour
+    greeting = "Good morning" if 5 <= hour < 12 else "Good afternoon" if 12 <= hour < 18 else "Good evening"
     
-    # Full-screen map
-    with st.container():
-        m = create_map()
-        folium_static(m, width=None, height=600)
-    
-    # Bottom sheet
-    st.markdown("""
-        <div class="bottom-sheet">
-            <h3>Good morning, {}</h3>
-            
+    st.markdown(f"""
+        <div class="mobile-container">
+            <h2>🚕 {greeting}, {st.session_state.username}</h2>
             <div class="search-box">
-                <input type="text" placeholder="Where to?" />
-            </div>
-            
-            <div class="recent-locations">
-                <h4>Recent Places</h4>
-                {}
-            </div>
-            
-            <div class="mode-toggle">
-                <button class="active">🚗 Rides</button>
-                <button>🍽️ Eats</button>
+                <input type="text" placeholder="Where to?" style="width: 100%;">
             </div>
         </div>
-    """.format(
-        st.session_state.username,
-        "".join([f"""
-            <div class="location-card">
-                <div class="location-name">{loc['name']}</div>
-                <div class="location-address">{loc['address']}</div>
-            </div>
-        """ for loc in recent_locations])
-    ), unsafe_allow_html=True)
-
-def show_booking_confirmation():
-    """Show booking confirmation with loading animation"""
+    """, unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown("""
-            <div style='text-align: center; padding: 20px;'>
-                <h2>Finding your ride...</h2>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Show loading animation
-        if st.session_state.animations['loading']:
-            st_lottie(st.session_state.animations['loading'], height=250)
-        
-        with st.spinner(""):
-            time.sleep(3)  # Simulate search
-            st.session_state.page = 'driver_assigned'
+    # Saved locations
+    for location in SAVED_LOCATIONS:
+        if st.button(f"{location['icon']} {location['name']}\n{location['address']}", key=f"loc_{location['name']}"):
+            st.session_state.destination = location['address']
+            st.session_state.page = 'confirm_ride'
             st.rerun()
+    
+    # Mode toggle
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🚗 Rides", key="rides_btn"):
+            st.session_state.mode = 'rides'
+    with col2:
+        if st.button("🍔 Eats", key="eats_btn"):
+            st.session_state.mode = 'eats'
+    
+    # Map with nearby drivers
+    m = create_map()
+    folium_static(m)
 
 def show_driver_assignment():
     """Show driver assignment and live tracking"""
+    if st.session_state.current_ride is None:
+        driver = get_random_driver()
+        st.session_state.current_ride = {
+            'driver': driver,
+            'pickup': st.session_state.pickup,
+            'dropoff': st.session_state.destination,
+            'eta': calculate_eta()
+        }
     
-    # Auto refresh every 2 seconds
-    st_autorefresh(interval=2000, key="map_refresh")
+    # Auto refresh for driver movement
+    st_autorefresh(interval=3000)
     
     # Update driver progress
     st.session_state.driver_progress += 0.02
     if st.session_state.driver_progress >= 1.0:
-        st.session_state.driver_progress = 0.0
-        st.session_state.page = 'ride_completed'
+        st.session_state.page = 'ride_complete'
         st.rerun()
     
-    # Get current driver location
+    # Show map with driver location
     driver_location = update_driver_location(
         st.session_state.current_ride['pickup'],
         st.session_state.current_ride['dropoff'],
         st.session_state.driver_progress
     )
+    m = create_map(
+        pickup=st.session_state.current_ride['pickup'],
+        dropoff=st.session_state.current_ride['dropoff'],
+        driver_location=driver_location
+    )
+    folium_static(m)
     
-    col1, col2 = st.columns([2, 1])
+    # Driver info card
+    driver = st.session_state.current_ride['driver']
+    remaining_time = int((1 - st.session_state.driver_progress) * st.session_state.current_ride['eta'])
     
+    st.markdown(f"""
+        <div class="driver-card">
+            <img src="{driver['photo']}" style="width: 60px; height: 60px; border-radius: 50%;">
+            <h3>{driver['name']} is on the way</h3>
+            <p>{driver['car']} • {driver['plate']}</p>
+            <div class="rating">{'⭐' * int(driver['rating'])}</div>
+            <div class="progress-bar">
+                <div class="progress" style="width: {st.session_state.driver_progress * 100}%"></div>
+            </div>
+            <p>Arriving in {remaining_time} minutes</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
     with col1:
-        # Show map with current driver position
-        m = create_map(
-            pickup=st.session_state.current_ride['pickup'],
-            dropoff=st.session_state.current_ride['dropoff'],
-            driver_location=driver_location
-        )
-        folium_static(m, width=800, height=500)
-        
-        # Show progress bar
-        remaining_time = int((1 - st.session_state.driver_progress) * st.session_state.current_ride['eta'])
-        st.markdown(f"""
-            <div style='text-align: center; padding: 10px; background: white; border-radius: 10px; margin: 10px 0;'>
-                <h3>Arriving in {remaining_time} minutes</h3>
-                <div class="progress-bar">
-                    <div class="progress" style="width: {st.session_state.driver_progress * 100}%"></div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    
+        st.button("Message Driver")
     with col2:
-        # Driver info
-        driver = st.session_state.current_ride['driver']
-        st.markdown(f"""
-            <div class="driver-card">
-                <img src="{driver['photo']}" class="driver-photo">
-                <div class="driver-info">
-                    <h3>{driver['name']}</h3>
-                    <div>{driver['car']} - {driver['plate']}</div>
-                    <div class="rating">{'⭐' * int(driver['rating'])}</div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Cancel ride button
-        if st.button("Cancel Ride", key="cancel_ride"):
+        if st.button("Cancel Ride"):
             st.session_state.current_ride = None
             st.session_state.page = 'booking'
             st.rerun()
 
-def show_ride_completed():
-    """Show ride completion with success animation"""
-    
-    # Show success animation with confetti
-    if st.session_state.animations['success']:
-        st_lottie(st.session_state.animations['success'], height=300)
+def show_ride_complete():
+    """Show ride completion screen with rating"""
+    # Show success animation
+    success_animation = load_lottie_url(LOTTIE_URLS['ride_complete'])
+    st_lottie(success_animation, height=200)
     
     st.markdown("""
-        <div style='text-align: center; padding: 20px;'>
-            <h1>🎉 Ride Completed!</h1>
-            <p>Thank you for riding with us</p>
+        <div class="mobile-container">
+            <h2>🎉 Thanks for riding with us!</h2>
+            <h3>How was your trip?</h3>
         </div>
     """, unsafe_allow_html=True)
     
-    # Rating and feedback
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown("""
-            <div class="rating-card">
-                <h3>Rate your ride</h3>
-                <div class="star-rating">⭐⭐⭐⭐⭐</div>
-                <textarea placeholder="Additional feedback (optional)"></textarea>
-                <button onclick="submitRating()">Submit Rating</button>
-            </div>
-        """, unsafe_allow_html=True)
-
-# Add some additional CSS for the new components
-st.markdown("""
-<style>
-/* Status bar */
-.status-card {
-    background: white;
-    border-radius: 15px;
-    padding: 20px;
-    margin: 15px 0;
-}
-
-.status-bar {
-    width: 100%;
-    height: 8px;
-    background: #f0f0f0;
-    border-radius: 4px;
-    overflow: hidden;
-    margin-top: 10px;
-}
-
-.status-progress {
-    height: 100%;
-    background: #276EF1;
-    transition: width 0.3s ease;
-}
-
-/* Rating card */
-.rating-card {
-    background: white;
-    border-radius: 15px;
-    padding: 25px;
-    text-align: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.star-rating {
-    font-size: 40px;
-    margin: 20px 0;
-    cursor: pointer;
-}
-
-.rating-card textarea {
-    width: 100%;
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid #ddd;
-    margin: 15px 0;
-    resize: vertical;
-}
-
-.rating-card button {
-    background: black;
-    color: white;
-    border: none;
-    border-radius: 25px;
-    padding: 12px 30px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-
-.rating-card button:hover {
-    transform: translateY(-2px);
-}
-</style>
-""", unsafe_allow_html=True)
-
-# Initialize session state
-if 'username' not in st.session_state:
-    st.session_state.username = "John"
-if 'mode' not in st.session_state:
-    st.session_state.mode = 'rides'
-if 'current_ride' not in st.session_state:
-    st.session_state.current_ride = None
-
-# Add to session state initialization
-if 'animations' not in st.session_state:
-    st.session_state.animations = {
-        key: load_lottie_url(url) for key, url in LOTTIE_URLS.items()
-    }
-
-if 'driver_progress' not in st.session_state:
-    st.session_state.driver_progress = 0.0
+    # Rating
+    rating = st.select_slider("Rate your ride", options=range(1, 6), value=5)
+    st.markdown(f"<div class='rating'>{'⭐' * rating}</div>", unsafe_allow_html=True)
+    
+    # Feedback
+    feedback = st.text_area("Any feedback for your driver?")
+    
+    if st.button("Submit"):
+        st.success("Thanks for your feedback!")
+        st.session_state.page = 'booking'
+        st.session_state.current_ride = None
+        st.session_state.driver_progress = 0.0
+        st.rerun()
 
 def main():
     """Main app logic"""
-    
-    # Page routing
     if st.session_state.page == 'booking':
         show_booking_page()
     elif st.session_state.page == 'driver_assigned':
         show_driver_assignment()
-    elif st.session_state.page == 'ride_completed':
-        show_ride_completed()
+    elif st.session_state.page == 'ride_complete':
+        show_ride_complete()
 
 if __name__ == "__main__":
     main() 
