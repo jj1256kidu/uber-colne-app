@@ -10,6 +10,7 @@ try:
     from streamlit_folium import folium_static
     from geopy.distance import geodesic
     from geopy.geocoders import Nominatim
+    from utils.maps import create_map
     MAPS_ENABLED = True
 except ImportError:
     MAPS_ENABLED = False
@@ -152,10 +153,16 @@ def show_booking_interface():
             pickup = st.text_input("Pickup Location", "Times Square, New York")
             dropoff = st.text_input("Drop-off Location", "Central Park, New York")
             
-            # Initialize map
+            # Show map only if dependencies are available
             if MAPS_ENABLED:
-                m = create_map(pickup, dropoff)
-                folium_static(m)
+                try:
+                    m = create_map(pickup, dropoff)
+                    folium_static(m)
+                except Exception as e:
+                    st.error(f"Could not load map. Error: {str(e)}")
+                    st.info("You can still book a ride without the map visualization.")
+            else:
+                st.info("Map view is currently disabled. Install folium and streamlit-folium to enable maps.")
         
         with col2:
             st.header("📋 Ride Details")
