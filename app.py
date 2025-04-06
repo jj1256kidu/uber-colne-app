@@ -237,11 +237,17 @@ def show_driver_assignment():
     # Auto refresh every 2 seconds
     st_autorefresh(interval=2000, key="map_refresh")
     
+    # Update driver progress
+    driver_progress = update_driver_location()
+    
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        # Show live tracking map
-        show_live_tracking()
+        # Show map with current driver position
+        m = create_map(
+            pickup=st.session_state.current_ride['pickup'],
+            dropoff=st.session_state.current
+        )
     
     with col2:
         # Driver info
