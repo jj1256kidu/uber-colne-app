@@ -241,6 +241,8 @@ def show_driver_assignment():
     st.session_state.driver_progress += 0.02
     if st.session_state.driver_progress >= 1.0:
         st.session_state.driver_progress = 0.0
+        st.session_state.page = 'ride_completed'
+        st.rerun()
     
     # Get current driver location
     driver_location = update_driver_location(
@@ -404,11 +406,12 @@ if 'driver_progress' not in st.session_state:
 def main():
     """Main app logic"""
     
+    # Page routing
     if st.session_state.page == 'booking':
         show_booking_page()
     elif st.session_state.page == 'driver_assigned':
         show_driver_assignment()
-    elif st.session_state.page == 'completed':
+    elif st.session_state.page == 'ride_completed':
         show_ride_completed()
 
 if __name__ == "__main__":
