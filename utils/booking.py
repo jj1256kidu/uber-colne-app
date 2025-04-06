@@ -12,6 +12,19 @@ from data.drivers import available_drivers
 from utils.maps import create_map, generate_route
 from utils.ride import calculate_fare, estimate_time
 
+def calculate_distance(pickup, dropoff):
+    """Calculate distance between two locations"""
+    try:
+        geolocator = Nominatim(user_agent="ridesharepro")
+        loc1 = geolocator.geocode(pickup)
+        loc2 = geolocator.geocode(dropoff)
+        return geodesic(
+            (loc1.latitude, loc1.longitude),
+            (loc2.latitude, loc2.longitude)
+        ).kilometers
+    except:
+        return 5.0  # Default fallback distance
+
 def show_booking_page():
     """Display the main booking interface"""
     
@@ -58,3 +71,81 @@ def show_booking_page():
     # ...
 
     # ... 
+
+def show_ride_options(distance, fare, eta):
+    """Display available ride options"""
+    
+    # Ride types with multipliers
+    ride_types = {
+        "UberX": 1.0,
+        "Comfort": 1.2,
+        "Premium": 1.5
+    }
+    
+    st.markdown("""
+        <style>
+        .ride-option {
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        .ride-option:hover {
+            background-color: #f8f9fa;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    selected_type = None
+    
+    for ride_type, multiplier in ride_types.items():
+        ride_fare = fare * multiplier
+        
+        # Create clickable ride option
+        if st.button(
+            f"""
+            ### {ride_type}
+            🕒 {eta} min • 💰 ${ride_fare:.2f}
+            """,
+            key=f"ride_{ride_type}",
+            use_container_width=True
+        ):
+            selected_type = ride_type
+            st.session_state.selected_ride = {
+                'type': ride_type,
+                'fare': ride_fare,
+                'distance': distance,
+                'eta': eta
+            }
+    
+    if selected_type:
+        confirm_booking(selected_type)
+
+def confirm_booking(ride_type):
+    """Handle ride confirmation and driver assignment"""
+    
+    st.markdown("### 🎉 Ready to ride!")
+    
+    # Show confirmation button
+    if st.button("🚀 Confirm Booking", use_container_width=True):
+        with st.spinner("Finding your driver..."):
+            time.sleep(2)
+            # Assign random driver
+            driver = random.choice(available_drivers)
+            
+            # Create ride in session state
+            st.session_state.current_ride = {
+                'driver': driver,
+                'pickup': st.session_state.pickup,
+                'dropoff': st.session_state.dropoff,
+                'type': ride_type,
+                'fare': st.session_state.selected_ride['fare'],
+                'status': 'Driver En Route',
+                'start_time': datetime.now(),
+                'driver_location': None
+            }
+            
+            st.success("Driver found! Redirecting...")
+            time.sleep(1)
+            st.rerun() 
