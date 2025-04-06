@@ -3,7 +3,7 @@ from datetime import datetime
 import time
 
 # Import utilities
-from utils.auth import check_auth, show_login
+from utils.auth import check_credentials, show_login
 from utils.booking import show_booking_page
 from utils.ride import show_active_ride, show_ride_history
 from utils.payment import show_payment_page
