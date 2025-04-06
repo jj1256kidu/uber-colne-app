@@ -23,33 +23,36 @@ def create_map(pickup=None, dropoff=None, driver_location=None):
     if pickup and dropoff:
         geolocator = Nominatim(user_agent="uber_clone")
         
-        # Add pickup marker
-        pickup_loc = geolocator.geocode(pickup)
-        folium.Marker(
-            [pickup_loc.latitude, pickup_loc.longitude],
-            popup="Pickup",
-            icon=folium.Icon(color='green')
-        ).add_to(m)
-        
-        # Add dropoff marker
-        dropoff_loc = geolocator.geocode(dropoff)
-        folium.Marker(
-            [dropoff_loc.latitude, dropoff_loc.longitude],
-            popup="Dropoff",
-            icon=folium.Icon(color='red')
-        ).add_to(m)
-        
-        # Draw route
-        route_coords = [
-            [pickup_loc.latitude, pickup_loc.longitude],
-            [dropoff_loc.latitude, dropoff_loc.longitude]
-        ]
-        folium.PolyLine(
-            route_coords,
-            weight=3,
-            color='blue',
-            opacity=0.8
-        ).add_to(m)
+        try:
+            # Add pickup marker
+            pickup_loc = geolocator.geocode(pickup)
+            folium.Marker(
+                [pickup_loc.latitude, pickup_loc.longitude],
+                popup="Pickup",
+                icon=folium.Icon(color='green')
+            ).add_to(m)
+            
+            # Add dropoff marker
+            dropoff_loc = geolocator.geocode(dropoff)
+            folium.Marker(
+                [dropoff_loc.latitude, dropoff_loc.longitude],
+                popup="Dropoff",
+                icon=folium.Icon(color='red')
+            ).add_to(m)
+            
+            # Draw route
+            route_coords = [
+                [pickup_loc.latitude, pickup_loc.longitude],
+                [dropoff_loc.latitude, dropoff_loc.longitude]
+            ]
+            folium.PolyLine(
+                route_coords,
+                weight=3,
+                color='blue',
+                opacity=0.8
+            ).add_to(m)
+        except:
+            pass
     
     # Add driver marker
     if driver_location:
@@ -131,7 +134,7 @@ def show_driver_assignment():
             <img src="{driver['photo']}" class="driver-photo">
             <div>
                 <h3>{driver['name']}</h3>
-                <div>{driver['car']} • {driver['plate']}</div>
+                <div>{driver['car']} - {driver['plate']}</div>
                 <div class="rating">{'⭐' * int(driver['rating'])}</div>
             </div>
             <div style="margin-left: auto">
