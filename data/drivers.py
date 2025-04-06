@@ -22,5 +22,13 @@ available_drivers = [
         'trips': 2100,
         'car': 'Tesla Model 3',
         'plate': 'EV 456'
+    },
+    {
+        'name': 'Emily Davis',
+        'photo': 'https://randomuser.me/api/portraits/women/2.jpg',
+        'rating': 4.9,
+        'trips': 1500,
+        'car': 'Hyundai Sonata',
+        'plate': 'DEF 789'
     }
 ] 
