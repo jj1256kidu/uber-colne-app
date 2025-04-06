@@ -5,17 +5,18 @@ import random
 from geopy.geocoders import Nominatim
 from utils.maps import create_map
 from utils.payment import show_payment_page
+from geopy.distance import geodesic
 
 def calculate_fare(distance):
-    """Calculate ride fare based on distance"""
+    """Calculate ride fare"""
     base_fare = 5.0
-    per_km_rate = 2.0
-    return base_fare + (distance * per_km_rate)
+    per_km = 2.0
+    return base_fare + (distance * per_km)
 
 def estimate_time(distance):
-    """Estimate ride time based on distance"""
+    """Estimate ride time in minutes"""
     avg_speed = 30  # km/h
-    return round((distance / avg_speed) * 60)  # Convert to minutes
+    return round((distance / avg_speed) * 60)
 
 def show_active_ride():
     """Display the active ride tracking interface"""
